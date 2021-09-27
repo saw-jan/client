@@ -295,7 +295,12 @@ void PropagateItemJob::done(SyncFileItem::Status statusArg, const QString &error
         qCWarning(lcPropagator) << "Could not complete propagation of" << _item->destination() << "by" << this << "with status" << _item->_status << "and error:" << _item->_errorString;
     else
         qCInfo(lcPropagator) << "Completed propagation of" << _item->destination() << "by" << this << "with status" << _item->_status;
-    emit propagator()->itemCompleted(_item);
+
+    // Will be handled in PropagateDirectory::slotSubJobsFinished at the end
+    // TODO:...
+    if (!_item->isDirectory() || qobject_cast<PropagateDirectory *>(this)) {
+        emit propagator()->itemCompleted(_item);
+    }
     emit finished(_item->_status);
 
     if (_item->_status == SyncFileItem::FatalError) {
@@ -1019,6 +1024,8 @@ void PropagateDirectory::slotSubJobsFinished(const SyncFileItem::Status status)
                 done(SyncFileItem::SoftError, tr("%1 the folder is currently in use").arg(_item->destination()));
                 return;
             }
+            done(SyncFileItem::Success);
+            return;
         }
     }
     // don't call done, we only propagate the state of the child items
