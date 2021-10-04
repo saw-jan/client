@@ -297,12 +297,12 @@ void PropagateItemJob::done(SyncFileItem::Status statusArg, const QString &error
         qCInfo(lcPropagator) << "Completed propagation of" << _item->destination() << "by" << this << "with status" << _item->_status;
 
     // Will be handled in PropagateDirectory::slotSubJobsFinished at the end
-    // TODO:...
     if (!_item->isDirectory() || qobject_cast<PropagateDirectory *>(this)) {
         emit propagator()->itemCompleted(_item);
+        emit finished(_item->_status);
+    } else {
+        qDebug() << "I'm a folder" << _item->destination() << _item->_status;
     }
-    emit finished(_item->_status);
-
     if (_item->_status == SyncFileItem::FatalError) {
         // Abort all remaining jobs.
         propagator()->abort();
@@ -997,35 +997,50 @@ void PropagateDirectory::slotFirstJobFinished(SyncFileItem::Status status)
 
 void PropagateDirectory::slotSubJobsFinished(const SyncFileItem::Status status)
 {
-    if (!_item->isEmpty() && status == SyncFileItem::Success) {
-        // If a directory is renamed, recursively delete any stale items
-        // that may still exist below the old path.
-        if (_item->_instruction == CSYNC_INSTRUCTION_RENAME
-            && _item->_originalFile != _item->_renameTarget) {
-            propagator()->_journal->deleteFileRecord(_item->_originalFile, true);
-        }
-
-        if (_item->_instruction == CSYNC_INSTRUCTION_NEW && _item->_direction == SyncFileItem::Down) {
-            // special case for local MKDIR, set local directory mtime
-            // (it's not synced later at all, but can be nice to have it set initially)
-            FileSystem::setModTime(propagator()->fullLocalPath(_item->destination()), _item->_modtime);
-        }
-
-        // For new directories we always want to update the etag once
-        // the directory has been propagated. Otherwise the directory
-        // could appear locally without being added to the database.
-        if (_item->_instruction & (CSYNC_INSTRUCTION_RENAME | CSYNC_INSTRUCTION_NEW | CSYNC_INSTRUCTION_UPDATE_METADATA)) {
-            const auto result = propagator()->updateMetadata(*_item);
-            if (!result) {
-                qCWarning(lcDirectory) << "Error writing to the database for file" << _item->_file << "with" << result.error();
-                done(SyncFileItem::FatalError, tr("Error updating metadata: %1").arg(result.error()));
-                return;
-            } else if (result.get() == Vfs::ConvertToPlaceholderResult::Locked) {
-                done(SyncFileItem::SoftError, tr("%1 the folder is currently in use").arg(_item->destination()));
-                return;
-            }
-            done(SyncFileItem::Success);
+    // instructions directly on this item and not on the child
+    constexpr auto UpdateRequiredInstructions = CSYNC_INSTRUCTION_RENAME | CSYNC_INSTRUCTION_NEW | CSYNC_INSTRUCTION_UPDATE_METADATA | CSYNC_INSTRUCTION_TYPE_CHANGE;
+    constexpr auto RelevantInstructions = UpdateRequiredInstructions | CSYNC_INSTRUCTION_IGNORE | CSYNC_INSTRUCTION_CONFLICT;
+    //    constexpr auto RelevantInstructions = CSYNC_INSTRUCTION_RENAME | CSYNC_INSTRUCTION_NEW | CSYNC_INSTRUCTION_UPDATE_METADATA;$
+    if (OC_ENSURE(!_item->isEmpty())) {
+        if (_item->_status != SyncFileItem::Status::NoStatus && _item->_status != SyncFileItem::Status::Success) {
+            qCWarning(lcDirectory) << "PropagateDirectory completed with" << status << "the dirctory job itself is marked as" << _item->_status;
+            done(_item->_status);
             return;
+        }
+
+        if (status == SyncFileItem::Success) {
+            // If a directory is renamed, recursively delete any stale items
+            // that may still exist below the old path.
+            if (_item->_instruction == CSYNC_INSTRUCTION_RENAME
+                && _item->_originalFile != _item->_renameTarget) {
+                propagator()->_journal->deleteFileRecord(_item->_originalFile, true);
+            }
+
+            if (_item->_instruction == CSYNC_INSTRUCTION_NEW && _item->_direction == SyncFileItem::Down) {
+                // special case for local MKDIR, set local directory mtime
+                // (it's not synced later at all, but can be nice to have it set initially)
+                FileSystem::setModTime(propagator()->fullLocalPath(_item->destination()), _item->_modtime);
+            }
+            // For new directories we always want to update the etag once
+            // the directory has been propagated. Otherwise the directory
+            // could appear locally without being added to the database.
+            if (_item->_instruction & RelevantInstructions) {
+                if (_item->_instruction & UpdateRequiredInstructions) {
+                    const auto result = propagator()->updateMetadata(*_item);
+                    if (!result) {
+                        qCWarning(lcDirectory) << "Error writing to the database for file" << _item->_file << "with" << result.error();
+                        done(SyncFileItem::FatalError, tr("Error updating metadata: %1").arg(result.error()));
+                        return;
+                    } else if (result.get() == Vfs::ConvertToPlaceholderResult::Locked) {
+                        done(SyncFileItem::SoftError, tr("%1 the folder is currently in use").arg(_item->destination()));
+                        return;
+                    }
+                }
+                done(SyncFileItem::Success);
+                return;
+            } else {
+                qWarning() << _item->destination() << "i'm irrelevant 😭" << _item->_status;
+            }
         }
     }
     // don't call done, we only propagate the state of the child items

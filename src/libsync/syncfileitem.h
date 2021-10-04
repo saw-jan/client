@@ -293,5 +293,11 @@ using SyncFileItemSet = std::set<SyncFileItemPtr>;
 Q_DECLARE_METATYPE(OCC::SyncFileItem)
 Q_DECLARE_METATYPE(OCC::SyncFileItemPtr)
 
+OWNCLOUDSYNC_EXPORT QDebug operator<<(QDebug debug, const OCC::SyncFileItem *item);
+inline QDebug operator<<(QDebug debug, const OCC::SyncFileItemPtr &item)
+{
+    return debug << item.data();
+}
+
 
 #endif // SYNCFILEITEM_H

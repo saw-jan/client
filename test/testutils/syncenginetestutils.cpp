@@ -1079,11 +1079,25 @@ FileInfo FakeFolder::dbState() const
 
 OCC::SyncFileItemPtr ItemCompletedSpy::findItem(const QString &path) const
 {
+    qInfo() << "Locating:" << path;
+    QVector<OCC::SyncFileItemPtr> out;
     for (const QList<QVariant> &args : *this) {
-        auto item = args[0].value<OCC::SyncFileItemPtr>();
-        if (item->destination() == path)
-            return item;
+        const auto &item = args.first().value<OCC::SyncFileItemPtr>();
+        if (item->destination() == path) {
+            out.append(item);
+        }
     }
+    const auto size = out.size();
+    if (size == 1) {
+        qInfo() << "Found signal for" << path << out.first();
+        return out.first();
+    } else if (size > 1) {
+        qInfo() << "Multiple signals for" << path << out;
+        for (const auto &item : out) {
+            qInfo() << item;
+        }
+    }
+    qInfo() << "No signals for" << path;
     return nullptr;
 }
 
