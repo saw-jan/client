@@ -761,41 +761,47 @@ bool JsonApiJob::finished()
     qCInfo(lcJsonApiJob) << "JsonApiJob of" << reply()->request().url() << "FINISHED WITH STATUS"
                          << replyStatusString();
 
-    int statusCode = 0;
-
     if (reply()->error() != QNetworkReply::NoError) {
         qCWarning(lcJsonApiJob) << "Network error: " << this << errorString() << reply()->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        emit jsonReceived(QJsonDocument(), statusCode);
-        return true;
-    }
-
-    QString jsonStr = QString::fromUtf8(reply()->readAll());
-    if (jsonStr.contains(QLatin1String("<?xml version=\"1.0\"?>"))) {
-        QRegExp rex(QStringLiteral("<statuscode>(\\d+)</statuscode>"));
-        if (jsonStr.contains(rex)) {
-            // this is a error message coming back from ocs.
-            statusCode = rex.cap(1).toInt();
-        }
-
     } else {
-        QRegExp rex(QStringLiteral("\"statuscode\":(\\d+),"));
-        // example: "{"ocs":{"meta":{"status":"ok","statuscode":100,"message":null},"data":{"version":{"major":8,"minor":"... (504)
-        if (jsonStr.contains(rex)) {
-            statusCode = rex.cap(1).toInt();
+        const QString jsonStr = QString::fromUtf8(reply()->readAll());
+        static const QRegularExpression rex(QStringLiteral("<statuscode>(\\d+)</statuscode>"));
+        const auto match = rex.match(jsonStr);
+
+        if (match.hasMatch()) {
+            // this is a error message coming back from ocs.
+            _status = match.captured(1).toInt();
+        } else {
+            QJsonParseError error;
+            const auto doc = QJsonDocument::fromJson(jsonStr.toUtf8(), &error);
+            // empty or invalid response
+            if (error.error != QJsonParseError::NoError || doc.isNull()) {
+                qCWarning(lcJsonApiJob) << "invalid JSON!" << jsonStr << error.errorString();
+            } else {
+                _data = doc.object();
+                // example: "{"ocs":{"meta":{"status":"ok","statuscode":100,"message":null},"data":{"version":{"major":8,"minor":"... (504)
+                if (_data.contains(QLatin1String("ocs"))) {
+                    _status = _data.value(QStringLiteral("ocs")).toObject().value(QStringLiteral("meta")).toObject().value(QStringLiteral("statuscode")).toInt();
+                } else {
+                    _status = reply()->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                }
+                emit jsonReceived(doc, _status);
+                return true;
+            }
         }
     }
-
-    QJsonParseError error;
-    auto json = QJsonDocument::fromJson(jsonStr.toUtf8(), &error);
-    // empty or invalid response
-    if (error.error != QJsonParseError::NoError || json.isNull()) {
-        qCWarning(lcJsonApiJob) << "invalid JSON!" << jsonStr << error.errorString();
-        emit jsonReceived(json, statusCode);
-        return true;
-    }
-
-    emit jsonReceived(json, statusCode);
+    emit jsonReceived({}, _status);
     return true;
+}
+
+const QJsonObject &JsonApiJob::data() const
+{
+    return _data;
+}
+
+int JsonApiJob::status() const
+{
+    return _status;
 }
 
 DetermineAuthTypeJob::DetermineAuthTypeJob(AccountPtr account, QObject *parent)

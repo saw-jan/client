@@ -18,11 +18,11 @@
 
 #include "abstractnetworkjob.h"
 #include "common/result.h"
+#include <QJsonObject>
 #include <QUrlQuery>
 #include <functional>
 
 class QUrl;
-class QJsonObject;
 
 namespace OCC {
 
@@ -355,6 +355,10 @@ public:
      */
     void addQueryParams(const QUrlQuery &params);
 
+    int status() const;
+
+    const QJsonObject &data() const;
+
 public slots:
     void start() override;
     /**
@@ -374,6 +378,8 @@ signals:
     void jsonReceived(const QJsonDocument &json, int statusCode);
 
 private:
+    QJsonObject _data;
+    int _status = 0;
     QUrlQuery _additionalParams;
 };
 

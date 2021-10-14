@@ -42,6 +42,8 @@ set(libsync_SRCS
     creds/abstractcredentials.cpp
     creds/credentialscommon.cpp
     creds/oauth.cpp
+
+    graphapi/drives.cpp
 )
 
 if(TOKEN_AUTH_ONLY)
