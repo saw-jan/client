@@ -59,6 +59,19 @@ class SharingDialog:
 
         return editChecked, shareChecked
 
+    def searchCollaborator(self, collaborator):
+        squish.mouseClick(
+            squish.waitForObject(self.SHARE_WITH_COLLABORATOR_INPUT_FIELD),
+            0,
+            0,
+            squish.Qt.NoModifier,
+            squish.Qt.LeftButton,
+        )
+        squish.type(
+            squish.waitForObject(self.SHARE_WITH_COLLABORATOR_INPUT_FIELD),
+            collaborator,
+        )
+
     def addCollaborator(self, receiver, permissions, isGroup=False):
         self.selectCollaborator(receiver, isGroup)
         permissionsList = permissions.split(",")
@@ -87,20 +100,12 @@ class SharingDialog:
         if isGroup:
             postFixInSuggestion = " (group)"
 
-        squish.mouseClick(
-            squish.waitForObject(self.SHARE_WITH_COLLABORATOR_INPUT_FIELD),
-            0,
-            0,
-            squish.Qt.NoModifier,
-            squish.Qt.LeftButton,
-        )
-        squish.type(
-            squish.waitForObject(self.SHARE_WITH_COLLABORATOR_INPUT_FIELD),
-            receiver,
-        )
+        self.searchCollaborator(receiver)
+
+        escapedReceiverName = receiver.replace("_", "\\_").replace(".", "\\.")
         squish.mouseClick(
             squish.waitForObjectItem(
-                self.SUGGESTED_COLLABORATOR, receiver + postFixInSuggestion
+                self.SUGGESTED_COLLABORATOR, escapedReceiverName + postFixInSuggestion
             ),
             0,
             0,
