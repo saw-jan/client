@@ -239,6 +239,7 @@ def step(context, receiver, resource, permissions):
     openSharingDialog(context, resource)
     shareItem = SharingDialog()
     shareItem.addCollaborator(receiver, permissions)
+    snooze(5)
 
 
 @When(
