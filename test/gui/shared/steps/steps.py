@@ -239,7 +239,6 @@ def step(context, receiver, resource, permissions):
     openSharingDialog(context, resource)
     shareItem = SharingDialog()
     shareItem.addCollaborator(receiver, permissions)
-    snooze(5)
 
 
 @When(
@@ -271,6 +270,11 @@ def collaboratorShouldBeListed(context, receiver, resource, permissions):
     socketConnect = syncstate.SocketConnect()
     socketConnect.sendCommand("SHARE:" + resource + "\n")
     permissionsList = permissions.split(',')
+    
+    waitForObject({"container": names.sharingDialogUG_scrollArea_QScrollArea, "name": "sharedWith", "type": "QLabel", "visible": 1})
+    sharedWithObj = findAllObjects({"container": names.sharingDialogUG_scrollArea_QScrollArea, "name": "sharedWith", "type": "QLabel", "visible": 1})
+    print('!!!!!!',sharedWithObj)
+    
     test.compare(
         str(waitForObjectExists(names.scrollArea_sharedWith_QLabel).text), receiver
     )
@@ -282,7 +286,10 @@ def collaboratorShouldBeListed(context, receiver, resource, permissions):
         waitForObjectExists(names.scrollArea_permissionShare_QCheckBox).checked,
         ('share' in permissionsList),
     )
-
+    
+    childObject = waitForObject({"container": names.sharingDialogUG_scrollArea_QScrollArea, "type": "QWidget", "unnamed": 1, "visible": 1})
+    print('/////////')
+    print(childObject)
 
 @When('the user waits for the files to sync')
 def step(context):
