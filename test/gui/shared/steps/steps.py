@@ -265,19 +265,37 @@ def step(context, receiver, resource, permissions):
     collaboratorShouldBeListed(context, receiver, resource, permissions)
 
 
+<<<<<<< HEAD
 def collaboratorShouldBeListed(context, receiver, resource, permissions):
     resource = getResourcePath(context, resource)
+=======
+def collaboratorShouldBeListed(
+    context, receiver, resource, permissions, receiverCount=0
+):
+    resource = substituteInLineCodes(context, resource)
+>>>>>>> verify file shared with multiuser
     socketConnect = syncstate.SocketConnect()
     socketConnect.sendCommand("SHARE:" + resource + "\n")
     permissionsList = permissions.split(',')
-    
-    waitForObject({"container": names.sharingDialogUG_scrollArea_QScrollArea, "name": "sharedWith", "type": "QLabel", "visible": 1})
-    sharedWithObj = findAllObjects({"container": names.sharingDialogUG_scrollArea_QScrollArea, "name": "sharedWith", "type": "QLabel", "visible": 1})
-    print('!!!!!!',sharedWithObj)
-    
-    test.compare(
-        str(waitForObjectExists(names.scrollArea_sharedWith_QLabel).text), receiver
+
+    waitForObject(
+        {
+            "container": names.sharingDialogUG_scrollArea_QScrollArea,
+            "name": "sharedWith",
+            "type": "QLabel",
+            "visible": 1,
+        }
     )
+    sharedWithObj = findAllObjects(
+        {
+            "container": names.sharingDialogUG_scrollArea_QScrollArea,
+            "name": "sharedWith",
+            "type": "QLabel",
+            "visible": 1,
+        }
+    )
+
+    test.compare(str(sharedWithObj[receiverCount].text), receiver)
     test.compare(
         waitForObjectExists(names.scrollArea_permissionsEdit_QCheckBox).checked,
         ('edit' in permissionsList),
@@ -286,10 +304,7 @@ def collaboratorShouldBeListed(context, receiver, resource, permissions):
         waitForObjectExists(names.scrollArea_permissionShare_QCheckBox).checked,
         ('share' in permissionsList),
     )
-    
-    childObject = waitForObject({"container": names.sharingDialogUG_scrollArea_QScrollArea, "type": "QWidget", "unnamed": 1, "visible": 1})
-    print('/////////')
-    print(childObject)
+
 
 @When('the user waits for the files to sync')
 def step(context):
@@ -1112,3 +1127,18 @@ def step(context, resource):
 def step(context, publicLinkName, password):
     publicLinkDialog = PublicLinkDialog()
     publicLinkDialog.changePassword(publicLinkName, password)
+
+    
+@Then(
+    'the following users should be listed in as collaborators for file "|any|" on the client-UI'
+)
+def step(context, resource):
+    receiverCount = 0
+    for row in context.table[1:]:
+        receiver = row[0]
+        permissions = row[1]
+
+        collaboratorShouldBeListed(
+            context, receiver, resource, permissions, receiverCount
+        )
+        receiverCount += 1

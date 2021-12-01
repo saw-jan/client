@@ -117,9 +117,11 @@ Feature: Sharing
         When the user adds "Brian Murphy" as collaborator of resource "%client_sync_path_user1%/textfile0.txt" with permissions "edit,share" using the client-UI
         And the user adds "Carol King" as collaborator of resource "%client_sync_path_user1%/textfile0.txt" with permissions "edit,share" using the client-UI
         And the user adds "David Lopez" as collaborator of resource "%client_sync_path_user1%/textfile0.txt" with permissions "edit,share" using the client-UI
-        Then user "Brian Murphy" should be listed in the collaborators list for file "%client_sync_path_user1%/textfile0.txt" with permissions "edit,share" on the client-UI
-        And user "Carol King" should be listed in the collaborators list for file "%client_sync_path_user1%/textfile0.txt" with permissions "edit,share" on the client-UI
-        And user "David Lopez" should be listed in the collaborators list for file "%client_sync_path_user1%/textfile0.txt" with permissions "edit,share" on the client-UI
+        Then the following users should be listed in as collaborators for file "%client_sync_path_user1%/textfile0.txt" on the client-UI
+            | user         | permissions |
+            | Brian Murphy | edit,share  |
+            | Carol King   | edit,share  |
+            | David Lopez  | edit,share  |
 
 
     @issue-7423
