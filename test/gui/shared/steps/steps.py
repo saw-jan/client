@@ -239,6 +239,21 @@ def step(context, receiver, resource, permissions):
     openSharingDialog(context, resource)
     shareItem = SharingDialog()
     shareItem.addCollaborator(receiver, permissions)
+    clickButton(waitForObject(shareItem.SHARING_DIALOG_CLOSE_BUTTON))
+
+
+@When('the user adds following collaborators of resource "|any|" using the client-UI')
+def step(context, resource):
+    openSharingDialog(context, resource)
+    shareItem = SharingDialog()
+
+    for row in context.table[1:]:
+        receiver = row[0]
+        permissions = row[1]
+        print('*****', receiver, permissions)
+        shareItem.addCollaborator(receiver, permissions)
+
+    clickButton(waitForObject(shareItem.SHARING_DIALOG_CLOSE_BUTTON))
 
 
 @When(
@@ -248,6 +263,7 @@ def step(context, receiver, resource, permissions):
     openSharingDialog(context, resource)
     shareItem = SharingDialog()
     shareItem.addCollaborator(receiver, permissions, True)
+    clickButton(waitForObject(shareItem.SHARING_DIALOG_CLOSE_BUTTON))
 
 
 @Then(
