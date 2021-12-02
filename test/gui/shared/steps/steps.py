@@ -250,7 +250,6 @@ def step(context, resource):
     for row in context.table[1:]:
         receiver = row[0]
         permissions = row[1]
-        print('*****', receiver, permissions)
         shareItem.addCollaborator(receiver, permissions)
 
     clickButton(waitForObject(shareItem.SHARING_DIALOG_CLOSE_BUTTON))
@@ -281,15 +280,10 @@ def step(context, receiver, resource, permissions):
     collaboratorShouldBeListed(context, receiver, resource, permissions)
 
 
-<<<<<<< HEAD
-def collaboratorShouldBeListed(context, receiver, resource, permissions):
-    resource = getResourcePath(context, resource)
-=======
 def collaboratorShouldBeListed(
     context, receiver, resource, permissions, receiverCount=0
 ):
     resource = substituteInLineCodes(context, resource)
->>>>>>> verify file shared with multiuser
     socketConnect = syncstate.SocketConnect()
     socketConnect.sendCommand("SHARE:" + resource + "\n")
     permissionsList = permissions.split(',')
@@ -302,6 +296,8 @@ def collaboratorShouldBeListed(
             "visible": 1,
         }
     )
+
+    # findAllObjects: This functionfinds and returns a list of object references identified by the symbolic or real (multi-property) name objectName.
     sharedWithObj = findAllObjects(
         {
             "container": names.sharingDialogUG_scrollArea_QScrollArea,
@@ -1144,7 +1140,7 @@ def step(context, publicLinkName, password):
     publicLinkDialog = PublicLinkDialog()
     publicLinkDialog.changePassword(publicLinkName, password)
 
-    
+
 @Then(
     'the following users should be listed in as collaborators for file "|any|" on the client-UI'
 )
