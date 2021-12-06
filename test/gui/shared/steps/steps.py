@@ -283,7 +283,7 @@ def step(context, receiver, resource, permissions):
 def collaboratorShouldBeListed(
     context, receiver, resource, permissions, receiverCount=0
 ):
-    resource = substituteInLineCodes(context, resource)
+    resource = getResourcePath(context, resource)
     socketConnect = syncstate.SocketConnect()
     socketConnect.sendCommand("SHARE:" + resource + "\n")
     permissionsList = permissions.split(',')
