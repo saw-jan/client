@@ -1,23 +1,38 @@
 ---
 {
-  "kind": "pipeline",
-  "name": "Core dump",
-  "platform": { "os": "linux", "arch": "amd64" },
-  "steps":
-    [
+  'kind': 'pipeline',
+  'name': 'Core dump',
+  'platform': { 'os': 'linux', 'arch': 'amd64' },
+  'steps': [
+      # {
+      #   'name': 'set-coredump-path',
+      #   'image': 'ubuntu:20.04',
+      #   'commands':
+      #     [
+      #       "echo 'kernel.core_pattern=/tmp/coredump/core.%e.%p.%h.%t' >> /etc/sysctl.conf",
+      #       'cat /etc/sysctl.conf',
+      #     ],
+      #   'volumes': [{ 'name': 'sys-config', 'path': '/etc/sysctl.conf' }],
+      # },
       {
-        "name": "coredump",
-        "image": "ubuntu:20.04",
-        "pull": "always",
-        "commands":
-          [
-            "ulimit -c",
-            "cat /etc/sysctl.conf",
-            "cat /proc/sys/kernel/core_pattern",
-            "./crashapp",
-            "ls /",
+        'name': 'build',
+        'image': 'owncloudci/client:2.9-amd64',
+        'commands':
+          ['mkdir -p client-build', 'cd client-build', 'cmake ..', 'make'],
+      },
+      {
+        'name': 'coredump',
+        'image': 'owncloudci/client:2.9-amd64',
+        'commands': [
+            # 'cat /etc/sysctl.conf',
+            # 'cat /proc/sys/kernel/core_pattern',
+            'ls',
+            './client-build/bin/owncloud || true',
+            'ls',
+            'cat core',
           ],
+        'depends_on': ['build'],
       },
     ],
-  "trigger": { "ref": ["refs/heads/master", "refs/pull/**"] },
+  'trigger': { 'ref': ['refs/heads/master', 'refs/pull/**'] },
 }

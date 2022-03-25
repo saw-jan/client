@@ -17,8 +17,8 @@
 #include <signal.h>
 
 #ifdef Q_OS_UNIX
-#include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/time.h>
 #endif
 
 #include "application.h"
@@ -29,8 +29,8 @@
 
 #include "updater/updater.h"
 
-#include <QTimer>
 #include <QMessageBox>
+#include <QTimer>
 
 using namespace OCC;
 
@@ -46,113 +46,114 @@ void warnSystray()
 
 int main(int argc, char **argv)
 {
-    Q_INIT_RESOURCE(client);
+    Utility::crash();
+    //     Q_INIT_RESOURCE(client);
 
-    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps, true);
-#ifdef Q_OS_WIN
-    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling, true);
-#endif // !Q_OS_WIN
+    //     QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps, true);
+    // #ifdef Q_OS_WIN
+    //     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling, true);
+    // #endif // !Q_OS_WIN
 
-#ifdef Q_OS_MAC
-    Mac::CocoaInitializer cocoaInit; // RIIA
-#endif
-    OCC::Application app(argc, argv);
+    // #ifdef Q_OS_MAC
+    //     Mac::CocoaInitializer cocoaInit; // RIIA
+    // #endif
+    //     OCC::Application app(argc, argv);
 
-#ifdef Q_OS_WIN
-    // The Windows style still has pixelated elements with Qt 5.6,
-    // it's recommended to use the Fusion style in this case, even
-    // though it looks slightly less native. Check here after the
-    // QApplication was constructed, but before any QWidget is
-    // constructed.
-    if (app.devicePixelRatio() > 1) {
-        QApplication::setStyle(QStringLiteral("fusion"));
-    }
-    // TODO: 2.11 move to platform class
-    Utility::startShutdownWatcher();
-#endif // Q_OS_WIN
+    // #ifdef Q_OS_WIN
+    //     // The Windows style still has pixelated elements with Qt 5.6,
+    //     // it's recommended to use the Fusion style in this case, even
+    //     // though it looks slightly less native. Check here after the
+    //     // QApplication was constructed, but before any QWidget is
+    //     // constructed.
+    //     if (app.devicePixelRatio() > 1) {
+    //         QApplication::setStyle(QStringLiteral("fusion"));
+    //     }
+    //     // TODO: 2.11 move to platform class
+    //     Utility::startShutdownWatcher();
+    // #endif // Q_OS_WIN
 
-#ifndef Q_OS_WIN
-    signal(SIGPIPE, SIG_IGN);
-#endif
+    // #ifndef Q_OS_WIN
+    //     signal(SIGPIPE, SIG_IGN);
+    // #endif
 
-// check a environment variable for core dumps
-#ifdef Q_OS_UNIX
-    if (!qEnvironmentVariableIsEmpty("OWNCLOUD_CORE_DUMP")) {
-        struct rlimit core_limit;
-        core_limit.rlim_cur = RLIM_INFINITY;
-        core_limit.rlim_max = RLIM_INFINITY;
+    // // check a environment variable for core dumps
+    // #ifdef Q_OS_UNIX
+    //     if (!qEnvironmentVariableIsEmpty("OWNCLOUD_CORE_DUMP")) {
+    //         struct rlimit core_limit;
+    //         core_limit.rlim_cur = RLIM_INFINITY;
+    //         core_limit.rlim_max = RLIM_INFINITY;
 
-        if (setrlimit(RLIMIT_CORE, &core_limit) < 0) {
-            fprintf(stderr, "Unable to set core dump limit\n");
-        } else {
-            qCInfo(lcApplication) << "Core dumps enabled";
-        }
-    }
-#endif
-    // if handleStartup returns true, main()
-    // needs to terminate here, e.g. because
-    // the updater is triggered
-    Updater *updater = Updater::instance();
-    if (updater && updater->handleStartup()) {
-        return 1;
-    }
+    //         if (setrlimit(RLIMIT_CORE, &core_limit) < 0) {
+    //             fprintf(stderr, "Unable to set core dump limit\n");
+    //         } else {
+    //             qCInfo(lcApplication) << "Core dumps enabled";
+    //         }
+    //     }
+    // #endif
+    //     // if handleStartup returns true, main()
+    //     // needs to terminate here, e.g. because
+    //     // the updater is triggered
+    //     Updater *updater = Updater::instance();
+    //     if (updater && updater->handleStartup()) {
+    //         return 1;
+    //     }
 
-    // if the application is already running, notify it.
-    if (app.isRunning()) {
-        qCInfo(lcApplication) << "Already running, exiting...";
-        if (app.isSessionRestored()) {
-            // This call is mirrored with the one in Application::slotParseMessage
-            qCInfo(lcApplication) << "Session was restored, don't notify app!";
-            return -1;
-        }
+    //     // if the application is already running, notify it.
+    //     if (app.isRunning()) {
+    //         qCInfo(lcApplication) << "Already running, exiting...";
+    //         if (app.isSessionRestored()) {
+    //             // This call is mirrored with the one in Application::slotParseMessage
+    //             qCInfo(lcApplication) << "Session was restored, don't notify app!";
+    //             return -1;
+    //         }
 
-        QStringList args = app.arguments();
-        if (args.size() > 1) {
-            QString msg = args.join(QLatin1String("|"));
-            if (!app.sendMessage(QLatin1String("MSG_PARSEOPTIONS:") + msg))
-                return -1;
-        }
-        return 0;
-    }
+    //         QStringList args = app.arguments();
+    //         if (args.size() > 1) {
+    //             QString msg = args.join(QLatin1String("|"));
+    //             if (!app.sendMessage(QLatin1String("MSG_PARSEOPTIONS:") + msg))
+    //                 return -1;
+    //         }
+    //         return 0;
+    //     }
 
-    // We can't call isSystemTrayAvailable with appmenu-qt5 begause it hides the systemtray
-    // (issue #4693)
-    if (qgetenv("QT_QPA_PLATFORMTHEME") != "appmenu-qt5")
-    {
-        if (!QSystemTrayIcon::isSystemTrayAvailable()) {
-            // If the systemtray is not there, we will wait one second for it to maybe start
-            // (eg boot time) then we show the settings dialog if there is still no systemtray.
-            // On XFCE however, we show a message box with explainaition how to install a systemtray.
-            qCInfo(lcApplication) << "System tray is not available, waiting...";
-            Utility::sleep(1);
+    //     // We can't call isSystemTrayAvailable with appmenu-qt5 begause it hides the systemtray
+    //     // (issue #4693)
+    //     if (qgetenv("QT_QPA_PLATFORMTHEME") != "appmenu-qt5")
+    //     {
+    //         if (!QSystemTrayIcon::isSystemTrayAvailable()) {
+    //             // If the systemtray is not there, we will wait one second for it to maybe start
+    //             // (eg boot time) then we show the settings dialog if there is still no systemtray.
+    //             // On XFCE however, we show a message box with explainaition how to install a systemtray.
+    //             qCInfo(lcApplication) << "System tray is not available, waiting...";
+    //             Utility::sleep(1);
 
-            auto desktopSession = qgetenv("XDG_CURRENT_DESKTOP").toLower();
-            if (desktopSession.isEmpty()) {
-                desktopSession = qgetenv("DESKTOP_SESSION").toLower();
-            }
-            if (desktopSession == "xfce") {
-                int attempts = 0;
-                while (!QSystemTrayIcon::isSystemTrayAvailable()) {
-                    attempts++;
-                    if (attempts >= 30) {
-                        qCWarning(lcApplication) << "System tray unavailable (xfce)";
-                        warnSystray();
-                        break;
-                    }
-                    Utility::sleep(1);
-                }
-            }
+    //             auto desktopSession = qgetenv("XDG_CURRENT_DESKTOP").toLower();
+    //             if (desktopSession.isEmpty()) {
+    //                 desktopSession = qgetenv("DESKTOP_SESSION").toLower();
+    //             }
+    //             if (desktopSession == "xfce") {
+    //                 int attempts = 0;
+    //                 while (!QSystemTrayIcon::isSystemTrayAvailable()) {
+    //                     attempts++;
+    //                     if (attempts >= 30) {
+    //                         qCWarning(lcApplication) << "System tray unavailable (xfce)";
+    //                         warnSystray();
+    //                         break;
+    //                     }
+    //                     Utility::sleep(1);
+    //                 }
+    //             }
 
-            if (QSystemTrayIcon::isSystemTrayAvailable()) {
-                app.tryTrayAgain();
-            } else if (desktopSession != "ubuntu") {
-                qCInfo(lcApplication) << "System tray still not available, showing window and trying again later";
-                QTimer::singleShot(10000, &app, &Application::tryTrayAgain);
-            } else {
-                qCInfo(lcApplication) << "System tray still not available, but assuming it's fine on 'ubuntu' desktop";
-            }
-        }
-    }
+    //             if (QSystemTrayIcon::isSystemTrayAvailable()) {
+    //                 app.tryTrayAgain();
+    //             } else if (desktopSession != "ubuntu") {
+    //                 qCInfo(lcApplication) << "System tray still not available, showing window and trying again later";
+    //                 QTimer::singleShot(10000, &app, &Application::tryTrayAgain);
+    //             } else {
+    //                 qCInfo(lcApplication) << "System tray still not available, but assuming it's fine on 'ubuntu' desktop";
+    //             }
+    //         }
+    //     }
 
-    return app.exec();
+    //     return app.exec();
 }
