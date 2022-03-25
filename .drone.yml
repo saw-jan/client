@@ -1,0 +1,23 @@
+---
+{
+  "kind": "pipeline",
+  "name": "Core dump",
+  "platform": { "os": "linux", "arch": "amd64" },
+  "steps":
+    [
+      {
+        "name": "coredump",
+        "image": "ubuntu:20.04",
+        "pull": "always",
+        "commands":
+          [
+            "ulimit -c",
+            "cat /etc/sysctl.conf",
+            "cat /proc/sys/kernel/core_pattern",
+            "./crashapp",
+            "ls /",
+          ],
+      },
+    ],
+  "trigger": { "ref": ["refs/heads/master", "refs/pull/**"] },
+}

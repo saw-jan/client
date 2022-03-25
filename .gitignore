@@ -16,7 +16,7 @@ build*
 cscope.*
 tags
 t1.cfg
-.drone.yml
+# .drone.yml
 .idea
 
 ## Ignore Visual Studio temporary files, build results, and
